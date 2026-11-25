@@ -2,6 +2,20 @@
 
 namespace Tmpl8 {
 
+inline float m128_lane( const __m128 v, const int idx )
+{
+	alignas(16) float lanes[4];
+	_mm_store_ps( lanes, v );
+	return lanes[idx];
+}
+
+inline int m128i_lane( const __m128i v, const int idx )
+{
+	alignas(16) int lanes[4];
+	_mm_store_si128( reinterpret_cast<__m128i*>(lanes), v );
+	return lanes[idx];
+}
+
 #pragma warning ( push )
 #pragma warning ( disable: 4201 /* nameless struct / union */ )
 
@@ -627,7 +641,7 @@ public:
 	mat2( float2 a, float2 b ) { cell[0] = a.x, cell[1] = b.x, cell[2] = a.y, cell[3] = b.y; }
 	// mat2( float2 a, float2 b ) { cell[0] = a.x, cell[1] = a.y, cell[2] = b.x, cell[3] = b.y; }
 	mat2( float a, float b, float c, float d ) { cell[0] = a, cell[1] = b, cell[2] = c, cell[3] = d; }
-	__declspec(align(16)) float cell[4] = { 1, 0, 0, 1 };
+	ALIGN(16) float cell[4] = { 1, 0, 0, 1 };
 	constexpr static mat2 Identity() { return mat2{}; }
 	float operator()( const int i, const int j ) const { return cell[i * 2 + j]; }
 	float& operator()( const int i, const int j ) { return cell[i * 2 + j]; }
@@ -638,7 +652,7 @@ class mat4
 {
 public:
 	mat4() = default;
-	__declspec(align(64)) float cell[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
+	ALIGN(64) float cell[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
 	float& operator [] ( const int idx ) { return cell[idx]; }
 	float operator()( const int i, const int j ) const { return cell[i * 4 + j]; }
 	float& operator()( const int i, const int j ) { return cell[i * 4 + j]; }

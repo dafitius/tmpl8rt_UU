@@ -27,7 +27,7 @@
 
 namespace Tmpl8 {
 
-__declspec(align(64)) class Ray
+ALIGN(64) class Ray
 {
 public:
 	Ray() = default;
@@ -70,8 +70,8 @@ public:
 	{
 	#if 1
 		const __m128 oc = _mm_sub_ps( ray.O4, _mm_set_ps( 1, 1, this->pos.y, -1.8f ) );
-		const float b = _mm_dp_ps( oc, ray.D4, 0xFF ).m128_f32[0];
-		const float c = _mm_dp_ps( oc, oc, 0xFF ).m128_f32[0];
+		const float b = m128_lane( _mm_dp_ps( oc, ray.D4, 0xFF ), 0 );
+		const float c = m128_lane( _mm_dp_ps( oc, oc, 0xFF ), 0 );
 	#else
 		float3 oc = ray.O - this->pos;
 		float b = dot( oc, ray.D );
@@ -94,8 +94,8 @@ public:
 	{
 	#if 1
 		const __m128 oc = _mm_sub_ps( ray.O4, _mm_set_ps( 1, 1, this->pos.y, -1.8f ) );
-		const float b = _mm_dp_ps( oc, ray.D4, 0xFF ).m128_f32[0];
-		const float c = _mm_dp_ps( oc, oc, 0xFF ).m128_f32[0];
+		const float b = m128_lane( _mm_dp_ps( oc, ray.D4, 0xFF ), 0 );
+		const float c = m128_lane( _mm_dp_ps( oc, oc, 0xFF ), 0 );
 	#else
 		float3 oc = ray.O - this->pos;
 		float b = dot( oc, ray.D );
@@ -158,7 +158,7 @@ public:
 		else if (N.z == -1)
 		{
 			// back wall: logo
-			static Surface logo( "../assets/logo.png" );
+			static Surface logo( "assets/logo.png" );
 			int ix = (int)((I.x + 4) * (128.0f / 8)), iy = (int)((2 - I.y) * (64.0f / 3));
 			uint p = logo.pixels[(ix & 127) + (iy & 63) * 128];
 			uint3 i3( (p >> 16) & 255, (p >> 8) & 255, p & 255 );
@@ -167,7 +167,7 @@ public:
 		else if (N.x == 1)
 		{
 			// left wall: red
-			static Surface red( "../assets/red.png" );
+			static Surface red( "assets/red.png" );
 			int ix = (int)((I.z - 4) * (512.0f / 7)), iy = (int)((2 - I.y) * (512.0f / 3));
 			uint p = red.pixels[(ix & 511) + (iy & 511) * 512];
 			uint3 i3( (p >> 16) & 255, (p >> 8) & 255, p & 255 );
@@ -176,7 +176,7 @@ public:
 		else if (N.x == -1)
 		{
 			// right wall: blue
-			static Surface blue( "../assets/blue.png" );
+			static Surface blue( "assets/blue.png" );
 			int ix = (int)((I.z - 4) * (512.0f / 7)), iy = (int)((2 - I.y) * (512.0f / 3));
 			uint p = blue.pixels[(ix & 511) + (iy & 511) * 512];
 			uint3 i3( (p >> 16) & 255, (p >> 8) & 255, p & 255 );
@@ -226,8 +226,8 @@ public:
 		__m128 t1 = _mm_mul_ps( _mm_sub_ps( bmin4, o4 ), rd4 );
 		__m128 t2 = _mm_mul_ps( _mm_sub_ps( bmax4, o4 ), rd4 );
 		__m128 vmax4 = _mm_max_ps( t1, t2 ), vmin4 = _mm_min_ps( t1, t2 );
-		float tmax = min( vmax4.m128_f32[0], min( vmax4.m128_f32[1], vmax4.m128_f32[2] ) );
-		float tmin = max( vmin4.m128_f32[0], max( vmin4.m128_f32[1], vmin4.m128_f32[2] ) );
+		float tmax = min( m128_lane( vmax4, 0 ), min( m128_lane( vmax4, 1 ), m128_lane( vmax4, 2 ) ) );
+		float tmin = max( m128_lane( vmin4, 0 ), max( m128_lane( vmin4, 1 ), m128_lane( vmin4, 2 ) ) );
 		if (tmin < tmax) if (tmin > 0)
 		{
 			if (tmin < ray.t) ray.t = tmin, ray.objIdx = objIdx;
@@ -279,8 +279,8 @@ public:
 		__m128 t1 = _mm_mul_ps( _mm_sub_ps( bmin4, o4 ), rd4 );
 		__m128 t2 = _mm_mul_ps( _mm_sub_ps( bmax4, o4 ), rd4 );
 		__m128 vmax4 = _mm_max_ps( t1, t2 ), vmin4 = _mm_min_ps( t1, t2 );
-		float tmax = min( vmax4.m128_f32[0], min( vmax4.m128_f32[1], vmax4.m128_f32[2] ) );
-		float tmin = max( vmin4.m128_f32[0], max( vmin4.m128_f32[1], vmin4.m128_f32[2] ) );
+		float tmax = min( m128_lane( vmax4, 0 ), min( m128_lane( vmax4, 1 ), m128_lane( vmax4, 2 ) ) );
+		float tmin = max( m128_lane( vmin4, 0 ), max( m128_lane( vmin4, 1 ), m128_lane( vmin4, 2 ) ) );
 		return tmax > 0 && tmin < tmax && tmin < ray.t;
 	#else
 		float3 O = TransformPosition_SSE( ray.O4, invM );
@@ -730,9 +730,9 @@ public:
 		const __m128 d4 = _mm_sub_ps( zero4, _mm_mul_ps( _mm_add_ps( ray.O4, x4 ), ray.rD4 ) );
 		const __m128 mask4 = _mm_cmple_ps( d4, zero4 );
 		const __m128 t4 = _mm_blendv_ps( d4, _mm_set1_ps( 1e34f ), mask4 );
-		/* first: unconditional */  ray.t = t4.m128_f32[0], ray.objIdx = idx4.m128i_i32[0];
-		if (t4.m128_f32[1] < ray.t) ray.t = t4.m128_f32[1], ray.objIdx = idx4.m128i_i32[1];
-		if (t4.m128_f32[2] < ray.t) ray.t = t4.m128_f32[2], ray.objIdx = idx4.m128i_i32[2];
+		/* first: unconditional */  ray.t = m128_lane( t4, 0 ), ray.objIdx = m128i_lane( idx4, 0 );
+		if (m128_lane( t4, 1 ) < ray.t) ray.t = m128_lane( t4, 1 ), ray.objIdx = m128i_lane( idx4, 1 );
+		if (m128_lane( t4, 2 ) < ray.t) ray.t = m128_lane( t4, 2 ), ray.objIdx = m128i_lane( idx4, 2 );
 	#else
 		if (ray.D.x < 0) PLANE_X( 3, 4 ) else PLANE_X( -2.99f, 5 );
 		if (ray.D.y < 0) PLANE_Y( 1, 6 ) else PLANE_Y( -2, 7 );
@@ -752,10 +752,10 @@ public:
 		const __m128 maskedT = _mm_and_ps( t, _mm_and_ps(
 			_mm_and_ps( _mm_cmpgt_ps( Ix, nsize ), _mm_cmplt_ps( Ix, size ) ),
 			_mm_and_ps( _mm_cmpgt_ps( Iz, nsize ), _mm_cmplt_ps( Iz, size ) ) ) );
-		if (maskedT.m128_f32[3] > 0) ray.t = maskedT.m128_f32[3], ray.objIdx = 0;
-		if (maskedT.m128_f32[2] > 0) ray.t = maskedT.m128_f32[2], ray.objIdx = 0;
-		if (maskedT.m128_f32[1] > 0) ray.t = maskedT.m128_f32[1], ray.objIdx = 0;
-		if (maskedT.m128_f32[0] > 0) ray.t = maskedT.m128_f32[0], ray.objIdx = 0;
+		if (m128_lane( maskedT, 3 ) > 0) ray.t = m128_lane( maskedT, 3 ), ray.objIdx = 0;
+		if (m128_lane( maskedT, 2 ) > 0) ray.t = m128_lane( maskedT, 2 ), ray.objIdx = 0;
+		if (m128_lane( maskedT, 1 ) > 0) ray.t = m128_lane( maskedT, 1 ), ray.objIdx = 0;
+		if (m128_lane( maskedT, 0 ) > 0) ray.t = m128_lane( maskedT, 0 ), ray.objIdx = 0;
 	#else
 		for (int i = 0; i < 4; i++) quad[i].Intersect( ray );
 	#endif
@@ -766,8 +766,8 @@ public:
 		{
 			// SIMD sphere intersection code by Jesse Vrooman
 			const __m128 oc = _mm_sub_ps( ray.O4, sphere.pos4 );
-			const float b = _mm_dp_ps( oc, ray.D4, 0x71 ).m128_f32[0];
-			const float d = b * b - (_mm_dp_ps( oc, oc, 0x71 ).m128_f32[0] - 0.36f);
+			const float b = m128_lane( _mm_dp_ps( oc, ray.D4, 0x71 ), 0 );
+			const float d = b * b - (m128_lane( _mm_dp_ps( oc, oc, 0x71 ), 0 ) - 0.36f);
 			if (d > 0)
 			{
 				const float t = -b - sqrtf( d );
@@ -779,8 +779,8 @@ public:
 			// SIMD sphere intersection code by Jesse Vrooman
 			const static __m128 s4 = _mm_setr_ps( 0, 2.5f, -3.07f, 1 );
 			const __m128 oc = _mm_sub_ps( ray.O4, s4 );
-			const float b = _mm_dp_ps( oc, ray.D4, 0x71 ).m128_f32[0];
-			const float d = b * b - (_mm_dp_ps( oc, oc, 0x71 ).m128_f32[0] - 64.0f);
+			const float b = m128_lane( _mm_dp_ps( oc, ray.D4, 0x71 ), 0 );
+			const float d = b * b - (m128_lane( _mm_dp_ps( oc, oc, 0x71 ), 0 ) - 64.0f);
 			if (d > 0)
 			{
 				const float t = sqrtf( d ) - b;
@@ -873,7 +873,7 @@ public:
 	{
 		return objIdx == 3 ? float3( 0.5f, 0, 0.5f ) : float3( 0 );
 	}
-	__declspec(align(64)) // start a new cacheline here
+	ALIGN(64) // start a new cacheline here
 		float animTime = 0;
 #ifdef FOURLIGHTS
 	Quad quad[4];

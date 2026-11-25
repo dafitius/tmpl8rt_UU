@@ -8,7 +8,7 @@ class Renderer : public TheApp
 public:
 	// game flow methods
 	void Init();
-	float3 Trace( Ray& ray );
+	float3 Trace( Ray ray );
 	void Tick( float deltaTime );
 	void UI();
 	void Shutdown() { /* implement if you want to do things on shutdown */ }

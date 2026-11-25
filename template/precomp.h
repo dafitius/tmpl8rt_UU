@@ -114,14 +114,14 @@ using namespace Tmpl8;
 
 // OpenCL headers
 #define CL_USE_DEPRECATED_OPENCL_2_0_APIS // safe; see https://stackoverflow.com/a/28500846
-#include "cl/cl.h"
-#include <cl/cl_gl_ext.h>
+#include "CL/cl.h"
+#include <CL/cl_gl.h>
 
 // GLFW
 #define GLFW_USE_CHDIR 0
 #define GLFW_EXPOSE_NATIVE_WIN32
 #define GLFW_EXPOSE_NATIVE_WGL
-#include <glad.h>
+#include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
