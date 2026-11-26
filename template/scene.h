@@ -161,10 +161,10 @@ public:
 		}
 		else if (N.z == -1)
 		{
-			// back wall: logo
-			static Surface logo( "assets/logo.png" );
-			int ix = (int)((I.x + 4) * (128.0f / 8)), iy = (int)((2 - I.y) * (64.0f / 3));
-			uint p = logo.pixels[(ix & 127) + (iy & 63) * 128];
+			// back wall: green
+			static Surface green( "assets/green.png" );
+			int ix = (int)((I.x + 4) * (1024.0f / 7)), iy = (int)((2 - I.y) * (512.0f / 3));
+			uint p = green.pixels[(ix & 1023) + (iy & 511) * 1024];
 			uint3 i3( (p >> 16) & 255, (p >> 8) & 255, p & 255 );
 			return float3( i3 ) * (1.0f / 255.0f);
 		}
