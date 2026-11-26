@@ -19,28 +19,28 @@ FetchContent_Declare(
 FetchContent_Declare(
     stb
     GIT_REPOSITORY https://github.com/nothings/stb.git
-    GIT_TAG master
+    GIT_TAG 6b5799bae8a1fe3792691ef4b72ae26434c3e799 # latest commit on 19-11-2026
 )
 FetchContent_Declare(
     glad
     GIT_REPOSITORY https://github.com/Dav1dde/glad.git
-    GIT_TAG glad2
+    GIT_TAG v2.0.8
     SOURCE_SUBDIR cmake
 )
 FetchContent_Declare(
     zlib
-    URL https://github.com/madler/zlib/archive/refs/tags/v1.3.1.tar.gz
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    GIT_REPOSITORY https://github.com/madler/zlib.git
+    GIT_TAG v1.3.1
 )
 FetchContent_Declare(
     opencl_headers
     GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
-    GIT_TAG main
+    GIT_TAG v2026.05.29
 )
 FetchContent_Declare(
     opencl_icd_loader
     GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
-    GIT_TAG main
+    GIT_TAG v2026.05.29
 )
 FetchContent_MakeAvailable(glfw)
 FetchContent_MakeAvailable(imgui)
@@ -138,7 +138,8 @@ if(WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE winmm advapi32 user32 gdi32 shell32 OpenGL32)
 endif()
 
-find_package(OpenMP QUIET)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+find_package(OpenMP QUIET COMPONENTS CXX)
+if(NOT OpenMP_CXX_FOUND)
+    message(FATAL_ERROR "OpenMP was not found. Please install it and try again.")
 endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)

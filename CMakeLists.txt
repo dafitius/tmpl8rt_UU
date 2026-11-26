@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.29)
 
 project(tmpl8rt_UU LANGUAGES C CXX)
 
@@ -6,7 +6,7 @@ if(WIN32)
     set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 

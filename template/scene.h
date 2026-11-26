@@ -392,7 +392,7 @@ class Torus
 {
 public:
 	Torus() = default;
-	Torus::Torus( int idx, float a, float b ) : objIdx( idx )
+	Torus( int idx, float a, float b ) : objIdx( idx )
 	{
 		rc2 = a * a, rt2 = b * b;
 		T = invT = mat4::Identity();
@@ -542,7 +542,7 @@ public:
 		float3 N = normalize( L * (dot( L, L ) - rt2 - rc2 * float3( 1, 1, -1 )) );
 		return TransformVector( N, T );
 	}
-	float3 Torus::GetAlbedo( const float3 I ) const
+	float3 GetAlbedo( const float3 I ) const
 	{
 		return float3( 1 ); // material.albedo;
 	}
