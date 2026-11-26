@@ -4,10 +4,6 @@
 #define GLAD_GL_IMPLEMENTATION
 #include "precomp.h"
 
-#ifdef _MSC_VER
-#pragma comment( linker, "/subsystem:windows /ENTRY:mainCRTStartup" )
-#endif
-
 using namespace Tmpl8;
 
 // Enable usage of dedicated GPUs in notebooks
@@ -82,8 +78,8 @@ void ErrorCallback( int, const char* description )
 	fprintf( stderr, "GLFW Error: %s\n", description );
 }
 
-// Application entry point
-int main()
+// Template library entry point
+int RunApp( AppFactory createApp )
 {
 	// open a window
 	if (!glfwInit()) FatalError( "glfwInit failed." );
@@ -144,7 +140,8 @@ int main()
 	// initialize application
 	InitRenderTarget( SCRWIDTH, SCRHEIGHT );
 	Surface* screen = new Surface( SCRWIDTH, SCRHEIGHT );
-	app = new Renderer();
+	std::unique_ptr<TheApp> ownedApp = createApp();
+	app = ownedApp.get();
 #if 0
 	// deserizalize
 	FILE* f = fopen( "appstate.dat", "rb" );
@@ -356,7 +353,8 @@ int main()
 #endif
 	// close down
 	app->Shutdown();
-	Kernel::KillCL();
+	app = 0;
+	ownedApp.reset();
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();

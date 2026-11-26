@@ -1,4 +1,5 @@
 #include "precomp.h"
+#include "renderer.h"
 
 // -----------------------------------------------------------
 // Initialize the renderer

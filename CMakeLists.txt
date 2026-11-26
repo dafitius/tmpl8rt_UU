@@ -24,5 +24,6 @@ if(CMAKE_CONFIGURATION_TYPES)
     endforeach()
 endif()
 
+add_subdirectory(template)
 add_subdirectory("1. Basics")
 

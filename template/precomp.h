@@ -3,6 +3,8 @@
 
 // C++ headers
 #include <chrono>
+#include <memory>
+#include <functional>
 #include <fstream>
 #include <vector>
 #include <list>
@@ -382,8 +384,14 @@ public:
 	void Tick() {}
 };
 
+// entry point for applications: call from main() with a function that creates your TheApp-derived object
+using AppFactory = std::function<std::unique_ptr<TheApp>()>;
+int RunApp( AppFactory createApp );
+
+// convenience overload: run an app type that is default-constructible
+template <class T> int RunApp() { return RunApp( [] { return std::make_unique<T>(); } ); }
+
 #include "scene.h"
 #include "camera.h"
-#include "renderer.h"
 
 // EOF
