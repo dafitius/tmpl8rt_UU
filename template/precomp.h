@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <io.h>
+#include <filesystem>
 
 // header for AVX, and every technology before it.
 // if your CPU does not support this (unlikely), include the appropriate header instead.
@@ -200,12 +201,12 @@ protected:
 
 // forward declaration of helper functions
 void FatalError( const char* fmt, ... );
-bool FileIsNewer( const char* file1, const char* file2 );
-bool FileExists( const char* f );
-bool RemoveFile( const char* f );
-string TextFileRead( const char* _File );
+bool FileIsNewer( std::filesystem::path file1, std::filesystem::path file2 );
+bool FileExists( std::filesystem::path f );
+bool RemoveFile( std::filesystem::path f );
+string TextFileRead( std::filesystem::path _File );
 int LineCount( const string s );
-void TextFileWrite( const string& text, const char* _File );
+void TextFileWrite( const string& text, std::filesystem::path _File );
 
 // global project settigs; shared with OpenCL
 #include "common.h"

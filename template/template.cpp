@@ -514,44 +514,37 @@ JobManager* JobManager::GetJobManager()
 }
 
 // Helper functions
-bool FileIsNewer( const char* file1, const char* file2 )
+bool FileIsNewer( std::filesystem::path file1, std::filesystem::path file2 )
 {
-	struct stat f1;
-	struct stat f2;
+	const auto time1 = std::filesystem::last_write_time( file1 );
 
-	auto ret = stat( file1, &f1 );
-	FATALERROR_IF( ret, "File %s not found!", file1 );
-
-	if (stat( file2, &f2 )) return true; // second file does not exist
-
-#ifdef _MSC_VER
-	return f1.st_mtime >= f2.st_mtime;
-#else
-	if (f1.st_mtim.tv_sec >= f2.st_mtim.tv_sec)
-		return true;
-	return f1.st_mtim.tv_nsec >= f2.st_mtim.tv_nsec;
-#endif
+std::error_code error;
+    const auto time2 = std::filesystem::last_write_time( file2, error );
+    if (error == std::errc::no_such_file_or_directory) return true;
+    if (error) throw std::filesystem::filesystem_error(
+        "Cannot read modification time", file2, error );
+    return time1 >= time2;
 }
 
-bool FileExists( const char* f )
+bool FileExists( std::filesystem::path f )
 {
-	ifstream s( f );
-	return s.good();
+	std::error_code error;
+	return std::filesystem::exists( f, error ) && !error;
 }
 
-bool RemoveFile( const char* f )
+bool RemoveFile( std::filesystem::path f )
 {
 	if (!FileExists( f )) return false;
-	return !remove( f );
+	return !std::filesystem::remove( f );
 }
 
-uint FileSize( string filename )
+uint FileSize( std::filesystem::path filename )
 {
-	ifstream s( filename );
-	return s.good();
+	ifstream s( filename, ios::binary | ios::ate );
+	return s.good() ? (uint)s.tellg() : 0;
 }
 
-string TextFileRead( const char* _File )
+string TextFileRead( std::filesystem::path _File )
 {
 	ifstream s( _File );
 	string str( (istreambuf_iterator<char>( s )), istreambuf_iterator<char>() );
@@ -567,7 +560,7 @@ int LineCount( const string s )
 	return lines;
 }
 
-void TextFileWrite( const string& text, const char* _File )
+void TextFileWrite( const string& text, std::filesystem::path _File )
 {
 	ofstream s( _File, ios::binary );
 	int len = (int)text.size();
