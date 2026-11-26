@@ -131,8 +131,8 @@ float RandomFloat( uint& seed );
 float Rand( float range );
 
 // math
-inline float fminf( const float a, const float b ) { return a < b ? a : b; }
-inline float fmaxf( const float a, const float b ) { return a > b ? a : b; }
+inline float minf( const float a, const float b ) { return a < b ? a : b; }
+inline float maxf( const float a, const float b ) { return a > b ? a : b; }
 inline float rsqrtf( const float x ) { return 1.0f / sqrtf( x ); }
 inline constexpr float sqrf( const float x ) { return x * x; }
 inline constexpr int sqr( int x ) { return x * x; }
@@ -419,9 +419,9 @@ inline float4 operator/( const float4& a, float b ) { return make_float4( a.x / 
 inline void operator/=( float4& a, float b ) { a.x /= b;	a.y /= b;	a.z /= b;	a.w /= b; }
 inline float4 operator/( float b, const float4& a ) { return make_float4( b / a.x, b / a.y, b / a.z, b / a.w ); }
 
-inline float2 fminf( const float2& a, const float2& b ) { return make_float2( fminf( a.x, b.x ), fminf( a.y, b.y ) ); }
-inline float3 fminf( const float3& a, const float3& b ) { return make_float3( fminf( a.x, b.x ), fminf( a.y, b.y ), fminf( a.z, b.z ) ); }
-inline float4 fminf( const float4& a, const float4& b ) { return make_float4( fminf( a.x, b.x ), fminf( a.y, b.y ), fminf( a.z, b.z ), fminf( a.w, b.w ) ); }
+inline float2 fminf( const float2& a, const float2& b ) { return make_float2( minf( a.x, b.x ), minf( a.y, b.y ) ); }
+inline float3 fminf( const float3& a, const float3& b ) { return make_float3( minf( a.x, b.x ), minf( a.y, b.y ), minf( a.z, b.z ) ); }
+inline float4 fminf( const float4& a, const float4& b ) { return make_float4( minf( a.x, b.x ), minf( a.y, b.y ), minf( a.z, b.z ), minf( a.w, b.w ) ); }
 inline int2 min( const int2& a, const int2& b ) { return make_int2( min( a.x, b.x ), min( a.y, b.y ) ); }
 inline int3 min( const int3& a, const int3& b ) { return make_int3( min( a.x, b.x ), min( a.y, b.y ), min( a.z, b.z ) ); }
 inline int4 min( const int4& a, const int4& b ) { return make_int4( min( a.x, b.x ), min( a.y, b.y ), min( a.z, b.z ), min( a.w, b.w ) ); }
@@ -429,9 +429,9 @@ inline uint2 min( const uint2& a, const uint2& b ) { return make_uint2( min( a.x
 inline uint3 min( const uint3& a, const uint3& b ) { return make_uint3( min( a.x, b.x ), min( a.y, b.y ), min( a.z, b.z ) ); }
 inline uint4 min( const uint4& a, const uint4& b ) { return make_uint4( min( a.x, b.x ), min( a.y, b.y ), min( a.z, b.z ), min( a.w, b.w ) ); }
 
-inline float2 fmaxf( const float2& a, const float2& b ) { return make_float2( fmaxf( a.x, b.x ), fmaxf( a.y, b.y ) ); }
-inline float3 fmaxf( const float3& a, const float3& b ) { return make_float3( fmaxf( a.x, b.x ), fmaxf( a.y, b.y ), fmaxf( a.z, b.z ) ); }
-inline float4 fmaxf( const float4& a, const float4& b ) { return make_float4( fmaxf( a.x, b.x ), fmaxf( a.y, b.y ), fmaxf( a.z, b.z ), fmaxf( a.w, b.w ) ); }
+inline float2 fmaxf( const float2& a, const float2& b ) { return make_float2( maxf( a.x, b.x ), maxf( a.y, b.y ) ); }
+inline float3 fmaxf( const float3& a, const float3& b ) { return make_float3( maxf( a.x, b.x ), maxf( a.y, b.y ), maxf( a.z, b.z ) ); }
+inline float4 fmaxf( const float4& a, const float4& b ) { return make_float4( maxf( a.x, b.x ), maxf( a.y, b.y ), maxf( a.z, b.z ), maxf( a.w, b.w ) ); }
 inline int2 max( const int2& a, const int2& b ) { return make_int2( max( a.x, b.x ), max( a.y, b.y ) ); }
 inline int3 max( const int3& a, const int3& b ) { return make_int3( max( a.x, b.x ), max( a.y, b.y ), max( a.z, b.z ) ); }
 inline int4 max( const int4& a, const int4& b ) { return make_int4( max( a.x, b.x ), max( a.y, b.y ), max( a.z, b.z ), max( a.w, b.w ) ); }
@@ -445,7 +445,7 @@ inline float2 lerp( const float2& a, const float2& b, float t ) { return a + t *
 inline float3 lerp( const float3& a, const float3& b, float t ) { return a + t * (b - a); }
 inline float4 lerp( const float4& a, const float4& b, float t ) { return a + t * (b - a); }
 
-inline float clamp( float f, float a, float b ) { return fmaxf( a, fminf( f, b ) ); }
+inline float clamp( float f, float a, float b ) { return maxf( a, minf( f, b ) ); }
 inline int clamp( int f, int a, int b ) { return max( a, min( f, b ) ); }
 inline uint clamp( uint f, uint a, uint b ) { return max( a, min( f, b ) ); }
 inline float2 clamp( const float2& v, float a, float b ) { return make_float2( clamp( v.x, a, b ), clamp( v.y, a, b ) ); }
