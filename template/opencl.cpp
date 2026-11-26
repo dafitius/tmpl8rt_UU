@@ -459,8 +459,13 @@ bool Kernel::InitCL()
 			{
 				cl_context_properties props[] =
 				{
+				#ifdef _WIN32
 					CL_GL_CONTEXT_KHR, (cl_context_properties)glfwGetWGLContext( window ),
 					CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
+				#else
+					CL_GL_CONTEXT_KHR, (cl_context_properties)glfwGetGLXContext( window ),
+					CL_GLX_DISPLAY_KHR, (cl_context_properties)glfwGetX11Display(),
+				#endif
 					CL_CONTEXT_PLATFORM, (cl_context_properties)platform, 0
 				};
 				// attempt to create a context with the requested features

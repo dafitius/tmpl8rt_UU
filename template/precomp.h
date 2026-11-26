@@ -11,8 +11,14 @@
 #include <math.h>
 #include <algorithm>
 #include <assert.h>
-#include <io.h>
+#include <condition_variable>
 #include <filesystem>
+
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 // header for AVX, and every technology before it.
 // if your CPU does not support this (unlikely), include the appropriate header instead.
@@ -79,7 +85,6 @@ using namespace std;
 #define NODEFERWINDOWPOS
 #define NOMCX
 #define NOIME
-#include "windows.h"
 
 // aligned memory allocations
 #ifdef _MSC_VER
@@ -120,8 +125,13 @@ using namespace Tmpl8;
 
 // GLFW
 #define GLFW_USE_CHDIR 0
+#ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #define GLFW_EXPOSE_NATIVE_WGL
+#else
+#define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_GLX
+#endif
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
@@ -171,7 +181,10 @@ public:
 	void CreateAndStartThread( unsigned int threadId );
 	void Go();
 	void BackgroundTask();
-	HANDLE m_GoSignal, m_ThreadHandle;
+	std::thread m_Thread;
+	std::mutex m_GoMutex;
+	std::condition_variable m_GoSignal;
+	bool m_Go = false;
 	int m_ThreadID;
 };
 class JobManager	// singleton class!
@@ -193,8 +206,10 @@ protected:
 	Job* GetNextJob();
 	static JobManager* m_JobManager;
 	Job* m_JobList[4096];
-	CRITICAL_SECTION m_CS;
-	HANDLE m_ThreadDone[64];
+	std::mutex m_CS;
+	std::mutex m_DoneMutex;
+	std::condition_variable m_DoneCV;
+	unsigned int m_DoneCount = 0;
 	unsigned int m_NumThreads, m_JobCount;
 	JobThread* m_JobThreadList;
 };
@@ -220,15 +235,15 @@ void TextFileWrite( const string& text, std::filesystem::path _File );
 #include <iostream>
 #include <bitset>
 #include <array>
-#include <intrin.h>
 
 // instruction set detection
 #ifdef _WIN32
 #define cpuid(info, x) __cpuidex(info, x, 0)
 #else
 #include <cpuid.h>
-void cpuid( int info[4], int InfoType ) { __cpuid_count( InfoType, 0, info[0], info[1], info[2], info[3] ); }
+inline void cpuid( int info[4], int InfoType ) { __cpuid_count( InfoType, 0, info[0], info[1], info[2], info[3] ); }
 #endif
+
 class CPUCaps // from https://github.com/Mysticial/FeatureDetector
 {
 public:

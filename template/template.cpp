@@ -126,6 +126,7 @@ int main()
 	if (strstr( renderer, "Arc" )) IGP_detected = false;
 	// we want a console window for text output
 #ifndef FULLSCREEN
+#ifdef _WIN32
 	CONSOLE_SCREEN_BUFFER_INFO coninfo;
 	AllocConsole();
 	GetConsoleScreenBufferInfo( GetStdHandle( STD_OUTPUT_HANDLE ), &coninfo );
@@ -136,6 +137,8 @@ int main()
 	freopen_s( &file, "CON", "w", stdout );
 	freopen_s( &file, "CON", "w", stderr );
 	SetWindowPos( GetConsoleWindow(), HWND_TOP, 0, 0, 1280, 800, 0 );
+	glfwShowWindow( window );
+#endif
 	glfwShowWindow( window );
 #endif
 	// initialize application
@@ -363,25 +366,21 @@ int main()
 }
 
 // Jobmanager implementation
-DWORD JobThreadProc( LPVOID lpParameter )
-{
-	JobThread* JobThreadInstance = (JobThread*)lpParameter;
-	JobThreadInstance->BackgroundTask();
-	return 0;
-}
-
 void JobThread::CreateAndStartThread( unsigned int threadId )
 {
-	m_GoSignal = CreateEvent( 0, FALSE, FALSE, 0 );
-	m_ThreadHandle = CreateThread( 0, 0, (LPTHREAD_START_ROUTINE)&JobThreadProc, (LPVOID)this, 0, 0 );
 	m_ThreadID = threadId;
+	m_Thread = std::thread(&JobThread::BackgroundTask, this );
+	m_Thread.detach();
 }
+
 void JobThread::BackgroundTask()
 {
-	while (1)
+	while (true)
 	{
-		WaitForSingleObject( m_GoSignal, INFINITE );
-		while (1)
+		std::unique_lock<std::mutex> lock( m_GoMutex );
+		m_GoSignal.wait( lock, [this] { return m_Go; } );
+		m_Go = false;
+		while (true)
 		{
 			Job* job = JobManager::GetJobManager()->GetNextJob();
 			if (!job)
@@ -396,7 +395,9 @@ void JobThread::BackgroundTask()
 
 void JobThread::Go()
 {
-	SetEvent( m_GoSignal );
+	std::lock_guard<std::mutex> lock( m_GoMutex );
+	m_Go = true;
+	m_GoSignal.notify_one();
 }
 
 void Job::RunCodeWrapper()
@@ -406,26 +407,19 @@ void Job::RunCodeWrapper()
 
 JobManager* JobManager::m_JobManager = 0;
 
-JobManager::JobManager( unsigned int threads ) : m_NumThreads( threads )
-{
-	InitializeCriticalSection( &m_CS );
-}
+JobManager::JobManager( unsigned int threads ) : m_NumThreads( threads ) {}
 
-JobManager::~JobManager()
-{
-	DeleteCriticalSection( &m_CS );
-}
+JobManager::~JobManager()= default;
 
 void JobManager::CreateJobManager( unsigned int numThreads )
 {
 	m_JobManager = new JobManager( numThreads );
 	m_JobManager->m_JobThreadList = new JobThread[numThreads];
+	m_JobManager->m_JobCount = 0;
 	for (unsigned int i = 0; i < numThreads; i++)
 	{
 		m_JobManager->m_JobThreadList[i].CreateAndStartThread( i );
-		m_JobManager->m_ThreadDone[i] = CreateEvent( 0, FALSE, FALSE, 0 );
 	}
-	m_JobManager->m_JobCount = 0;
 }
 
 void JobManager::AddJob2( Job* a_Job )
@@ -435,11 +429,8 @@ void JobManager::AddJob2( Job* a_Job )
 
 Job* JobManager::GetNextJob()
 {
-	Job* job = 0;
-	EnterCriticalSection( &m_CS );
-	if (m_JobCount > 0) job = m_JobList[--m_JobCount];
-	LeaveCriticalSection( &m_CS );
-	return job;
+	std::lock_guard<std::mutex> lock( m_CS );
+	return m_JobCount > 0 ? m_JobList[--m_JobCount] : nullptr;
 }
 
 void JobManager::RunJobs( bool MT )
@@ -447,59 +438,32 @@ void JobManager::RunJobs( bool MT )
 	if (m_JobCount == 0) return;
 	if (MT)
 	{
+
+		std::lock_guard<std::mutex> done_lock( m_DoneMutex );
+		m_DoneCount = 0;
+
 		for (unsigned int i = 0; i < m_NumThreads; i++) m_JobThreadList[i].Go();
-		WaitForMultipleObjects( m_NumThreads, m_ThreadDone, TRUE, INFINITE );
+		std::unique_lock<std::mutex> lock( m_DoneMutex );
+		m_DoneCV.wait( lock, [this] { return m_DoneCount == m_NumThreads; } );
 	}
 	else
 	{
-		// run the jobs on a single core, for debugging
 		for (uint i = 0; i < m_JobCount; i++) m_JobList[i]->Main();
 	}
 }
 
-void JobManager::ThreadDone( unsigned int n )
+void JobManager::ThreadDone( unsigned int )
 {
-	SetEvent( m_ThreadDone[n] );
-}
-
-DWORD CountSetBits( ULONG_PTR bitMask )
-{
-	DWORD LSHIFT = sizeof( ULONG_PTR ) * 8 - 1, bitSetCount = 0;
-	ULONG_PTR bitTest = (ULONG_PTR)1 << LSHIFT;
-	for (DWORD i = 0; i <= LSHIFT; ++i) bitSetCount += ((bitMask & bitTest) ? 1 : 0), bitTest /= 2;
-	return bitSetCount;
+	std::lock_guard<std::mutex> lock( m_DoneMutex );
+	m_DoneCount++;
+	m_DoneCV.notify_all();
 }
 
 void JobManager::GetProcessorCount( uint& cores, uint& logical )
 {
-	// https://github.com/GPUOpen-LibrariesAndSDKs/cpu-core-counts
-	cores = logical = 0;
-	char* buffer = NULL;
-	DWORD len = 0;
-	if (FALSE == GetLogicalProcessorInformationEx( RelationAll, (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)buffer, &len ))
-	{
-		if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
-		{
-			buffer = (char*)malloc( len );
-			if (GetLogicalProcessorInformationEx( RelationAll, (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)buffer, &len ))
-			{
-				DWORD offset = 0;
-				char* ptr = buffer;
-				while (ptr < buffer + len)
-				{
-					PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX pi = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)ptr;
-					if (pi->Relationship == RelationProcessorCore)
-					{
-						cores++;
-						for (size_t g = 0; g < pi->Processor.GroupCount; ++g)
-							logical += CountSetBits( pi->Processor.GroupMask[g].Mask );
-					}
-					ptr += pi->Size;
-				}
-			}
-			free( buffer );
-		}
-	}
+	logical = std::thread::hardware_concurrency();
+	if (logical == 0) logical = 1;
+	cores = logical; // approximation; fine unless you specifically need physical cores
 }
 
 JobManager* JobManager::GetJobManager()

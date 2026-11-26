@@ -439,7 +439,8 @@ inline uint2 max( const uint2& a, const uint2& b ) { return make_uint2( max( a.x
 inline uint3 max( const uint3& a, const uint3& b ) { return make_uint3( max( a.x, b.x ), max( a.y, b.y ), max( a.z, b.z ) ); }
 inline uint4 max( const uint4& a, const uint4& b ) { return make_uint4( max( a.x, b.x ), max( a.y, b.y ), max( a.z, b.z ), max( a.w, b.w ) ); }
 
-inline float lerp( float a, float b, float t ) { return a + t * (b - a); }
+//disabled since it conflicts with the c++20's own implementation
+// inline float lerp( float a, float b, float t ) { return a + t * (b - a); }
 inline float2 lerp( const float2& a, const float2& b, float t ) { return a + t * (b - a); }
 inline float3 lerp( const float3& a, const float3& b, float t ) { return a + t * (b - a); }
 inline float4 lerp( const float4& a, const float4& b, float t ) { return a + t * (b - a); }
@@ -615,6 +616,8 @@ public:
 		if (Extend( 2 ) > Extend( a )) a = 2;
 		return a;
 	}
+	[[nodiscard]] float3 BMin3() const { return { bmin[0], bmin[1], bmin[2] }; }
+	[[nodiscard]] float3 BMax3() const { return { bmax[0], bmax[1], bmax[2] }; }
 	// data members
 #pragma warning ( push )
 #pragma warning ( disable: 4201 /* nameless struct / union */ )
@@ -622,8 +625,8 @@ public:
 	{
 		struct
 		{
-			union { __m128 bmin4; float bmin[4]; struct { float3 bmin3; }; };
-			union { __m128 bmax4; float bmax[4]; struct { float3 bmax3; }; };
+			union { __m128 bmin4; float bmin[4]; };
+			union { __m128 bmax4; float bmax[4]; };
 		};
 		__m128 bounds[2] = { _mm_setr_ps( 1e34f, 1e34f, 1e34f, 0 ), _mm_setr_ps( -1e34f, -1e34f, -1e34f, 0 ) };
 	};

@@ -27,18 +27,22 @@
 
 namespace Tmpl8 {
 
-ALIGN(64) class Ray
+class ALIGN(64) Ray
 {
-public:
+	public:
 	Ray() = default;
 	Ray( const float3 origin, const float3 direction, const float distance = 1e34f, const int idx = -1 )
 	{
-		O = origin, D = direction, t = distance;
-		// calculate reciprocal ray direction for triangles and AABBs
+#ifdef SPEEDTRIX
+		// 4th lane: 1 for the origin, 0 for directions - ready for SIMD matrix math
+		O4 = _mm_setr_ps( origin.x, origin.y, origin.z, 1 );
+		D4 = _mm_setr_ps( direction.x, direction.y, direction.z, 0 );
+		rD4 = _mm_setr_ps( 1 / direction.x, 1 / direction.y, 1 / direction.z, 0 );
+#else
+		O = origin, D = direction;
 		rD = float3( 1 / D.x, 1 / D.y, 1 / D.z );
-	#ifdef SPEEDTRIX
-		d0 = 1, d1 = d2 = 0; // ready for SIMD matrix math
-	#endif
+#endif
+		t = distance;
 		objIdx = idx;
 	}
 	float3 IntersectionPoint() const { return O + t * D; }
@@ -46,9 +50,9 @@ public:
 #ifndef SPEEDTRIX
 	float3 O, D, rD;
 #else
-	union { struct { float3 O; float d0; }; __m128 O4; };
-	union { struct { float3 D; float d1; }; __m128 D4; };
-	union { struct { float3 rD; float d2; }; __m128 rD4; };
+	union { float3 O; __m128 O4; };
+	union { float3 D; __m128 D4; };
+	union { float3 rD; __m128 rD4; };
 #endif
 	float t = 1e34f;
 	int objIdx = -1;
